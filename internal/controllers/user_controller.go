@@ -33,5 +33,11 @@ func (this *UserController) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *UserController) Authorize(w http.ResponseWriter, r *http.Request) {
-
+	if token, err := this.userService.Authorize(r.FormValue("login"), r.FormValue("password")); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte(err.Error()))
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(token.Token))
+	}
 }

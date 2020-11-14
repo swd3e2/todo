@@ -29,6 +29,7 @@ func (this *Store) Connect(config *Config) error {
 	if err != nil {
 		return err
 	}
+
 	if err := db.Ping(); err != nil {
 		return err
 	}

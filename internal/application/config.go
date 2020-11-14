@@ -30,9 +30,11 @@ func NewConfig() *Config {
 }
 
 func (this *Config) SetUp(filename string) error {
-	viper.SetConfigName("app")
+	viper.SetConfigName(filename)
 	viper.SetConfigType("toml")
 	viper.AddConfigPath("configs")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("../configs")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return err

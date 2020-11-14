@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"github.com/swd3e2/todo/internal/domain"
 	"github.com/swd3e2/todo/internal/repository"
 	"golang.org/x/crypto/bcrypt"
@@ -16,8 +17,26 @@ func NewUserService(userRepository repository.UserRepository) *UserService {
 	}
 }
 
-func (this *UserService) Authorize(login string, password string) {
+type Token struct {
+	Token string
+}
 
+func (this *UserService) Authorize(login string, password string) (token *Token, err error) {
+	var user *domain.User
+
+	if user, err = this.userRepository.FindByLogin(login); err != nil || user == nil {
+		return nil, errors.New("Пользователь не найден")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Credentials.Password), []byte(password)); err != nil {
+		return nil, errors.New("Неправильный пароль")
+	}
+
+	token = &Token{
+		Token: "sadasdasda",
+	}
+
+	return token, nil
 }
 
 type RegisterPayload struct {
@@ -35,12 +54,14 @@ func (this *UserService) Register(payload RegisterPayload) error {
 		return err
 	}
 
+	password := string(bytes)
+
 	user := &domain.User{
 		Name:     payload.Name,
 		LastName: payload.LastName,
 		Credentials: domain.Credentials{
 			Login:    payload.Login,
-			Password: string(bytes),
+			Password: password,
 		},
 	}
 

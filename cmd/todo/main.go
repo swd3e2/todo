@@ -15,7 +15,7 @@ func main() {
 func run() error {
 	app := application.New()
 
-	if err := app.Configure("configs/app.toml"); err != nil {
+	if err := app.Configure("app"); err != nil {
 		return err
 	}
 
