@@ -1,8 +1,0 @@
-port="8081"
-
-[store]
-user = "root"
-pwd = "myX6FMXz"
-dsn = "localhost"
-port = "3306"
-database = "test"
