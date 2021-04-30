@@ -1,24 +1,19 @@
 package application
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/viper"
 )
 
 type StoreConfig struct {
-	User     string
-	Pwd      string
-	Dsn      string
-	Port     string
-	Database string
+	Dsn string
 }
 
 type Config struct {
 	Port     string
 	LogLevel string
-	Name     string
-	PathMap  string `mapstructure:"path_map"`
 	Store    StoreConfig
 }
 
@@ -29,32 +24,68 @@ func NewConfig() *Config {
 	}
 }
 
-func (this *Config) SetUp(filename string) error {
-	viper.SetConfigName(filename)
-	viper.SetConfigType("toml")
-	viper.AddConfigPath("configs")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("../configs")
+func (c *Config) SetUp(filename string) error {
+	v := viper.New()
 
-	if err := viper.ReadInConfig(); err != nil {
+	v.SetDefault("LOG_LEVEL", "debug")
+
+	if err := c.configureFromFile(filename, v); err != nil {
+		if err := c.configureFromEnvironment(v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Config) configureFromFile(filename string, v *viper.Viper) error {
+	v.SetConfigName(filename)
+	v.SetConfigType("toml")
+	v.AddConfigPath("configs")
+
+	if err := v.ReadInConfig(); err != nil {
 		return err
 	}
 
-	if err := viper.Unmarshal(&this); err != nil {
+	if err := v.Unmarshal(&c); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (this *Config) String() string {
-	return fmt.Sprintf(`Port: %s
-	Store {User: %s, Pwd: %s, Dsn: %s, Port: %s, Database: %s}`,
-		this.Port,
-		this.Store.User,
-		this.Store.Pwd,
-		this.Store.Dsn,
-		this.Store.Port,
-		this.Store.Database,
+func (c *Config) configureFromEnvironment(v *viper.Viper) error {
+	v.AutomaticEnv()
+
+	var ok bool
+
+	rawPort := v.Get("PORT")
+	if c.Port, ok = rawPort.(string); !ok {
+		c.Port = "8081"
+	}
+
+	rawLogLevel := v.Get("LOG_LEVEL")
+	c.LogLevel, _ = rawLogLevel.(string)
+
+	rawDbDsn := v.Get("DB_DSN")
+	if c.Store.Dsn, ok = rawDbDsn.(string); !ok {
+		return errors.New("не заполнен дсн от бд")
+	}
+
+	return nil
+}
+
+func (c *Config) String() string {
+	return fmt.Sprintf(`
+Config
+----------------------
+Port: %s,
+LogLevel: %s,
+Store {
+	Dsn: %s, 
+}`,
+		c.Port,
+		c.LogLevel,
+		c.Store.Dsn,
 	)
 }

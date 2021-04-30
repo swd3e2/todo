@@ -1,8 +1,6 @@
 # Initial stage: download modules
 FROM golang:1.15 as modules
 
-ARG ssh_key
-
 RUN mkdir /root/.ssh
 ADD go.mod go.sum /m/
 RUN cd /m && go mod download

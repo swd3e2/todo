@@ -1,79 +1,81 @@
 package application
 
 import (
-	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/hashicorp/go.net/context"
 	"github.com/sirupsen/logrus"
-	"github.com/swd3e2/todo/internal/container"
-	"github.com/swd3e2/todo/internal/infrastructure/mysql"
-	"github.com/swd3e2/todo/internal/repository"
-	"github.com/swd3e2/todo/internal/service"
+	"github.com/swd3e2/todo/internal/handler"
 )
 
 type Application struct {
-	router    *Router
-	config    *Config
-	logger    *logrus.Logger
-	store     *Store
-	container *container.Container
+	router *mux.Router
+	config *Config
+	logger *logrus.Logger
+	store  *Store
 }
 
 func New() *Application {
 	return &Application{
-		logger:    logrus.New(),
-		store:     NewStore(),
-		router:    NewRouter(),
-		config:    NewConfig(),
-		container: container.New(),
+		logger: logrus.New(),
+		store:  NewStore(),
+		config: NewConfig(),
 	}
 }
 
-func (this *Application) Configure(filename string) error {
-	if err := this.config.SetUp(filename); err != nil {
+func (a *Application) Configure(filename string) error {
+	if err := a.config.SetUp(filename); err != nil {
 		return err
 	}
 
-	if level, err := logrus.ParseLevel(this.config.LogLevel); err != nil {
+	if level, err := logrus.ParseLevel(a.config.LogLevel); err != nil {
 		return err
 	} else {
-		this.logger.SetLevel(level)
-		this.logger.SetFormatter(&logrus.TextFormatter{
+		a.logger.SetLevel(level)
+		a.logger.SetFormatter(&logrus.TextFormatter{
 			FullTimestamp: true,
 		})
 	}
 
-	this.logger.Info(this.config)
+	a.logger.Info(a.config)
 
-	if err := this.store.Connect(this.config); err != nil {
+	if err := a.store.Connect(a.config); err != nil {
 		return err
 	}
-	this.logger.Info("Successfully connected to database")
+	a.logger.Info("Successfully connected to database")
 
-	this.initRepositories()
-	this.initServices()
-
-	if err := this.router.Configure(this.container); err != nil {
-		return err
-	}
+	a.router = mux.NewRouter()
+	a.router.Handle("/user/register", handler.NewRegister(a.logger)).Methods("POST")
+	a.router.Handle("/user/authorize", handler.NewAuthorize(a.logger)).Methods("POST")
 
 	return nil
 }
 
-func (this *Application) Run() error {
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", this.config.Port), this.router.Router); err != nil {
-		return err
+func (a *Application) Run() error {
+	server := http.Server{
+		Addr:         ":" + a.config.Port,
+		Handler:      a.router,
+		ReadTimeout:  2 * time.Second,
+		WriteTimeout: 3 * time.Second,
 	}
 
+	go func() {
+		server.ListenAndServe()
+	}()
+
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, os.Kill)
+
+	<-sigChan
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	server.Shutdown(ctx)
+	a.store.Close(ctx)
+	cancel()
+
 	return nil
-}
-
-func (this *Application) initRepositories() {
-	this.container.Set(container.USER_REPOSITORY, mysql.NewMySqlRepository(this.store.Db))
-}
-
-func (this *Application) initServices() {
-	this.container.Set(container.USER_SERVICE, service.NewUserService(
-		this.container.Get(container.USER_REPOSITORY).(repository.UserRepository),
-	))
 }
