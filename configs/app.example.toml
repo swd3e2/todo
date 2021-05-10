@@ -1,8 +1,9 @@
-port = ""
+port = "8091"
+logLevel="debug"
 
 [store]
-user = ""
-pwd = ""
-dsn = ""
+host = ""
 port = ""
+user = ""
+password = ""
 database = ""

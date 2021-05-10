@@ -1,9 +1,8 @@
 package main
 
 import (
+	"github.com/swd3e2/todo/internal/application/core"
 	"log"
-
-	"github.com/swd3e2/todo/internal/application"
 )
 
 func main() {
@@ -13,7 +12,7 @@ func main() {
 }
 
 func run() error {
-	app := application.New()
+	app := core.New()
 
 	if err := app.Configure("app"); err != nil {
 		return err
