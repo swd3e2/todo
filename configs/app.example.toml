@@ -1,5 +1,6 @@
 port = "8091"
 logLevel="debug"
+migrationsPath="file:///migrations"
 
 [store]
 host = ""

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/go-playground/validator"
 	"github.com/sirupsen/logrus"
 	"github.com/swd3e2/todo/internal/application"
 	"net/http"
@@ -26,17 +27,22 @@ func (h *AuthorizeHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+	user := struct {
+		Login    string `validate:"required"`
+		Password string `validate:"required"`
+	}{
+		Login:    r.Form.Get("login"),
+		Password: r.Form.Get("password"),
+	}
 
-	login := r.Form.Get("login")
-	password := r.Form.Get("password")
-
-	if login == "" || password == "" {
+	validate := validator.New()
+	if err := validate.Struct(user); err != nil {
 		h.logger.Error("Не передан логин или пароль")
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	t, err := h.service.Authorize(login, password)
+	t, err := h.service.Authorize(user.Login, user.Password)
 	if err != nil {
 		h.logger.WithError(err).Error("Ошибка в севисе")
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

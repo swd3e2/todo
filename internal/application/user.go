@@ -2,20 +2,9 @@ package application
 
 import (
 	"errors"
-	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
-
-var (
-	userNotFound  = errors.New("пользователь не найден")
-	wrongPassword = errors.New("неправильный пароль")
-)
-
-type Credentials struct {
-	Login    string
-	Password string
-}
 
 // User Пользователь
 type User struct {
@@ -37,6 +26,11 @@ type UserRepository interface {
 	Save(user *User) error
 }
 
+var (
+	userNotFound  = errors.New("пользователь не найден")
+	wrongPassword = errors.New("неправильный пароль")
+)
+
 // UserService Сервис пользователей
 type UserService struct {
 	userRepository UserRepository
@@ -56,7 +50,6 @@ type Token struct {
 // Authorize Авторизация пользователя, выдача токена
 func (s *UserService) Authorize(login string, password string) (token *Token, err error) {
 	var user *User
-	fmt.Println(login)
 	if user, err = s.userRepository.FindByLogin(login); err != nil || user == nil {
 		return nil, userNotFound
 	}
