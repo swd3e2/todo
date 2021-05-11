@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/swd3e2/todo/internal/application"
 	"github.com/swd3e2/todo/internal/application/handler"
 	"github.com/swd3e2/todo/internal/application/postgres"
@@ -57,9 +58,16 @@ func (a *Application) Configure(filename string) error {
 	service := application.NewUserService(postgres.NewUserRepository(a.store.conn))
 
 	a.router = mux.NewRouter()
-	a.router.Handle("/user/register", handler.NewRegister(a.logger, service)).Methods("POST")
-	a.router.Handle("/user/authorize", handler.NewAuthorize(a.logger, service)).Methods("POST")
+	a.router.Handle("/register", handler.NewRegister(a.logger, service)).Methods("POST")
+	a.router.Handle("/authorize", handler.NewAuthorize(a.logger, service)).Methods("POST")
 	a.router.Handle("/todo", handler.NewCreateTodo(a.logger)).Methods("POST")
+
+	// handler for documentation
+	opts := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
+	sh := middleware.Redoc(opts, nil)
+
+	a.router.Handle("/docs", sh)
+	a.router.Handle("/swagger.yaml", http.FileServer(http.Dir("/")))
 
 	return nil
 }
@@ -78,7 +86,7 @@ func (a *Application) Run() error {
 	)
 
 	if err := postgres.RunMigrations(dbUrl, a.config.MigrationsPath); err != nil {
-		a.logger.WithError(err).Error("Не смогли применить миграцию")
+		a.logger.WithError(err).Error("Не смогли применить миграции")
 		return err
 	}
 	a.logger.Info("Миграции применены")

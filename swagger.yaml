@@ -1,0 +1,15 @@
+paths:
+  /authorize:
+    post:
+      description: Authorize
+      operationId: authorize
+      responses:
+        "201":
+          $ref: '#/responses/noContentResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - auth
+swagger: "2.0"

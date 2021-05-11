@@ -32,5 +32,6 @@ USER application
 COPY --from=builder /application/bin/app /app
 COPY build/wait-for-it.sh /wait-for-it.sh
 COPY internal/application/postgres/migrations /migrations
+COPY swagger.yaml /swagger.yaml
 
 CMD ["/app"]

@@ -5,6 +5,17 @@ import (
 	"log"
 )
 
+// @title Todo App API
+// @version 1.0.0
+// @description Demo todo app
+
+// @host localhost:8091
+// @BasePath /
+
+// @securityDefinitions.apiKey ApiKeyAuth
+// @in header
+// @name Authorization
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)

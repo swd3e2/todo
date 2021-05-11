@@ -7,6 +7,14 @@ import (
 	"net/http"
 )
 
+// swagger:route POST /authorize auth authorize
+// Authorize
+//
+// responses:
+//	201: noContentResponse
+//  400: errorResponse
+//  500: errorResponse
+
 type AuthorizeHandler struct {
 	logger  *logrus.Logger
 	service *application.UserService
