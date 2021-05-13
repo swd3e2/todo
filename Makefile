@@ -1,4 +1,4 @@
-.PHONY: run
+.PHONY: all
 
 run:
 	docker-compose up --remove-orphans --build

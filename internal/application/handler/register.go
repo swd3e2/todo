@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/go-playground/validator"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/swd3e2/todo/internal/application"
 	"net/http"
@@ -9,18 +10,25 @@ import (
 
 type RegisterHandler struct {
 	logger  *logrus.Logger
+	counter *prometheus.CounterVec
 	service *application.UserService
 }
 
-func NewRegister(logger *logrus.Logger, service *application.UserService) *RegisterHandler {
+func NewRegister(
+	logger *logrus.Logger,
+	counter *prometheus.CounterVec,
+	service *application.UserService,
+) *RegisterHandler {
 	return &RegisterHandler{
 		logger:  logger,
+		counter: counter,
 		service: service,
 	}
 }
 
 func (h *RegisterHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.logger.Infof("RegisterHandler")
+	h.counter.With(prometheus.Labels{"path": "/register"}).Inc()
 
 	if err := r.ParseForm(); err != nil {
 		h.logger.WithError(err).Error("Не удалось распарсить форму")

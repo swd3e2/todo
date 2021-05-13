@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/swd3e2/todo/internal/application"
 	"github.com/swd3e2/todo/internal/application/handler"
 	"github.com/swd3e2/todo/internal/application/postgres"
@@ -57,9 +60,14 @@ func (a *Application) Configure(filename string) error {
 
 	service := application.NewUserService(postgres.NewUserRepository(a.store.conn))
 
+	usersRegistered := promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "requests",
+		}, []string{"path"})
+
 	a.router = mux.NewRouter()
-	a.router.Handle("/register", handler.NewRegister(a.logger, service)).Methods("POST")
-	a.router.Handle("/authorize", handler.NewAuthorize(a.logger, service)).Methods("POST")
+	a.router.Handle("/register", handler.NewRegister(a.logger, usersRegistered, service)).Methods("POST")
+	a.router.Handle("/authorize", handler.NewAuthorize(a.logger, usersRegistered, service)).Methods("POST")
 	a.router.Handle("/todo", handler.NewCreateTodo(a.logger)).Methods("POST")
 
 	// handler for documentation
@@ -68,6 +76,12 @@ func (a *Application) Configure(filename string) error {
 
 	a.router.Handle("/docs", sh)
 	a.router.Handle("/swagger.yaml", http.FileServer(http.Dir("/")))
+
+	a.router.Handle("/metrics", promhttp.Handler())
+
+	if a.config.ProfilingEnabled {
+		a.router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
+	}
 
 	return nil
 }

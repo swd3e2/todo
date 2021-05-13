@@ -34,5 +34,25 @@ services:
         networks:
             - todo
 
+    grafana:
+        image: grafana/grafana:latest
+        ports:
+            - 3000:3000
+        environment:
+            - GF_SECURITY_ADMIN_USER=admin
+            - GF_SECURITY_ADMIN_PASSWORD=admin
+            - GF_USERS_ALLOW_SIGN_UP=false
+        networks:
+            - todo
+
+    prometheus:
+        image: prom/prometheus:latest
+        ports:
+            - 9090:9090
+        volumes:
+            - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
+        networks:
+            - todo
+
 networks:
     todo:

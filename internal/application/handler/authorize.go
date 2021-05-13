@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/go-playground/validator"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/swd3e2/todo/internal/application"
 	"net/http"
@@ -17,21 +18,28 @@ import (
 
 type AuthorizeHandler struct {
 	logger  *logrus.Logger
+	counter *prometheus.CounterVec
 	service *application.UserService
 }
 
-func NewAuthorize(logger *logrus.Logger, service *application.UserService) *AuthorizeHandler {
+func NewAuthorize(
+	logger *logrus.Logger,
+	counter *prometheus.CounterVec,
+	service *application.UserService,
+) *AuthorizeHandler {
 	return &AuthorizeHandler{
 		logger:  logger,
+		counter: counter,
 		service: service,
 	}
 }
 
 func (h *AuthorizeHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.logger.Infof("AuthorizeHandler")
+	h.counter.With(prometheus.Labels{"path": "/authorize"}).Inc()
 
 	if err := r.ParseForm(); err != nil {
-		h.logger.Error("Не удалось распаристь форму")
+		h.logger.Error("Не удалось распарсить форму")
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

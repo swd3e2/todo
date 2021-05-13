@@ -17,10 +17,11 @@ type StoreConfig struct {
 
 // Config Структура со всеми настройками проекта.
 type Config struct {
-	Port           string
-	LogLevel       string
-	MigrationsPath string
-	Store          StoreConfig
+	Port             string
+	LogLevel         string
+	MigrationsPath   string
+	ProfilingEnabled bool
+	Store            StoreConfig
 }
 
 // NewConfig Создание нового конфига с настройками.
@@ -74,6 +75,7 @@ func (c *Config) configureFromEnvironment(v *viper.Viper) error {
 	c.Port = v.GetString("PORT")
 	c.LogLevel = v.GetString("LOG_LEVEL")
 	c.MigrationsPath = v.GetString("MIGRATIONS_PATH")
+	c.ProfilingEnabled = v.GetBool("PROFILING_ENABLED")
 
 	c.Store.Host = v.GetString("DB_HOST")
 	c.Store.Port = v.GetUint("DB_PORT")
@@ -92,6 +94,7 @@ Config
 Port: %s,
 LogLevel: %s,
 MigrationsPath: %s,
+ProfilingEnabled: %t,
 Store {
 	Host: %s,
 	Port: %d,
@@ -102,6 +105,7 @@ Store {
 		c.Port,
 		c.LogLevel,
 		c.MigrationsPath,
+		c.ProfilingEnabled,
 		c.Store.Host,
 		c.Store.Port,
 		c.Store.User,
