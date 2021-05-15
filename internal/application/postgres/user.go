@@ -20,6 +20,10 @@ func (r *UserRepository) FindByLogin(login string) (*application.User, error) {
 		QueryRow("select id, name, last_name, age, login, password, last_updated from users where login=$1", login).
 		Scan(&user.Id, &user.Name, &user.LastName, &user.Age, &user.Login, &user.Password, &user.LastUpdated)
 
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}

@@ -53,12 +53,12 @@ func (a *Application) Configure(filename string) error {
 
 	a.logger.Info(a.config)
 
-	if err := a.store.Connect(a.config); err != nil {
+	if err := a.store.Connect(&a.config.Store); err != nil {
 		return err
 	}
 	a.logger.Info("Successfully connected to database")
 
-	service := application.NewUserService(postgres.NewUserRepository(a.store.conn))
+	service := application.NewUserService(postgres.NewUserRepository(a.store.Db))
 
 	usersRegistered := promauto.NewCounterVec(
 		prometheus.CounterOpts{

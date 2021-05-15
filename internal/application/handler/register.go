@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/go-playground/validator"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -11,13 +12,13 @@ import (
 type RegisterHandler struct {
 	logger  *logrus.Logger
 	counter *prometheus.CounterVec
-	service *application.UserService
+	service application.UserService
 }
 
 func NewRegister(
 	logger *logrus.Logger,
 	counter *prometheus.CounterVec,
-	service *application.UserService,
+	service application.UserService,
 ) *RegisterHandler {
 	return &RegisterHandler{
 		logger:  logger,
@@ -30,22 +31,17 @@ func (h *RegisterHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.logger.Infof("RegisterHandler")
 	h.counter.With(prometheus.Labels{"path": "/register"}).Inc()
 
-	if err := r.ParseForm(); err != nil {
-		h.logger.WithError(err).Error("Не удалось распарсить форму")
+	user := struct {
+		Name     string `validate:"required" json:"name"`
+		Lastname string `validate:"required" json:"lastname"`
+		Login    string `validate:"required" json:"login"`
+		Password string `validate:"required" json:"password"`
+	}{}
+
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		h.logger.WithError(err).Error("Не удалось распарсить запрос")
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
-	}
-
-	user := struct {
-		Name     string `validate:"required"`
-		Lastname string `validate:"required"`
-		Login    string `validate:"required"`
-		Password string `validate:"required"`
-	}{
-		Name:     r.Form.Get("name"),
-		Lastname: r.Form.Get("lastname"),
-		Login:    r.Form.Get("login"),
-		Password: r.Form.Get("password"),
 	}
 
 	validate := validator.New()
@@ -55,8 +51,13 @@ func (h *RegisterHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Register(user.Name, user.Lastname, user.Login, user.Password); err != nil {
-		h.logger.WithError(err).Error("Ошибка в севисе")
+	err := h.service.Register(user.Name, user.Lastname, user.Login, user.Password)
+	if err == application.LoginIsAlreadyInUse {
+		h.logger.WithError(err).Error("Логин занят")
+		http.Error(rw, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
+	} else if err != nil {
+		h.logger.WithError(err).Error("Ошибка в сервисе")
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

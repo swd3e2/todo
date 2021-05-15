@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/go-playground/validator"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -19,13 +20,13 @@ import (
 type AuthorizeHandler struct {
 	logger  *logrus.Logger
 	counter *prometheus.CounterVec
-	service *application.UserService
+	service application.UserService
 }
 
 func NewAuthorize(
 	logger *logrus.Logger,
 	counter *prometheus.CounterVec,
-	service *application.UserService,
+	service application.UserService,
 ) *AuthorizeHandler {
 	return &AuthorizeHandler{
 		logger:  logger,
@@ -38,17 +39,15 @@ func (h *AuthorizeHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.logger.Infof("AuthorizeHandler")
 	h.counter.With(prometheus.Labels{"path": "/authorize"}).Inc()
 
-	if err := r.ParseForm(); err != nil {
-		h.logger.Error("Не удалось распарсить форму")
+	user := struct {
+		Login    string `validate:"required" json:"login"`
+		Password string `validate:"required" json:"password"`
+	}{}
+
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		h.logger.Error("Не удалось распарсить запрос")
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
-	}
-	user := struct {
-		Login    string `validate:"required"`
-		Password string `validate:"required"`
-	}{
-		Login:    r.Form.Get("login"),
-		Password: r.Form.Get("password"),
 	}
 
 	validate := validator.New()
@@ -58,12 +57,12 @@ func (h *AuthorizeHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := h.service.Authorize(user.Login, user.Password)
+	token, err := h.service.Authorize(user.Login, user.Password)
 	if err != nil {
 		h.logger.WithError(err).Error("Ошибка в севисе")
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	_, _ = rw.Write([]byte(t.Token))
+	_, _ = rw.Write([]byte(token.Token))
 }

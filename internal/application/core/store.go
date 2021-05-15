@@ -6,7 +6,7 @@ import (
 
 // Store Хранилище
 type Store struct {
-	conn *pgx.Conn
+	Db *pgx.Conn
 }
 
 // NewStore Создание нового хранилища
@@ -15,25 +15,25 @@ func NewStore() *Store {
 }
 
 // Connect Открытие коннекта к бд
-func (s *Store) Connect(config *Config) error {
+func (s *Store) Connect(config *StoreConfig) error {
 	conn, err := pgx.Connect(pgx.ConnConfig{
-		Host:     config.Store.Host,
-		Port:     uint16(config.Store.Port),
-		User:     config.Store.User,
-		Password: config.Store.Password,
-		Database: config.Store.Database,
+		Host:     config.Host,
+		Port:     uint16(config.Port),
+		User:     config.User,
+		Password: config.Password,
+		Database: config.Database,
 	})
 
 	if err != nil {
 		return err
 	}
 
-	s.conn = conn
+	s.Db = conn
 
 	return nil
 }
 
 // Close Закрытие коннекта к бд
 func (s *Store) Close() error {
-	return s.conn.Close()
+	return s.Db.Close()
 }
