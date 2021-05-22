@@ -2,7 +2,7 @@ package application
 
 import (
 	"errors"
-	"github.com/swd3e2/todo/internal/application/jwt"
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"time"
@@ -46,19 +46,14 @@ type UserService interface {
 
 // UserServiceImpl Сервис пользователей
 type UserServiceImpl struct {
-	userRepository  UserRepository
-	jwtTokenBuilder jwt.Builder
+	userRepository UserRepository
+	tokeBuilder    TokenBuilder
 }
 
 func NewUserService(userRepository UserRepository) *UserServiceImpl {
 	return &UserServiceImpl{
 		userRepository: userRepository,
 	}
-}
-
-// Token Jwt токен
-type Token struct {
-	Token string
 }
 
 // Authorize Авторизация пользователя, выдача токена
@@ -72,12 +67,10 @@ func (s *UserServiceImpl) Authorize(login string, password string) (token *Token
 		return nil, WrongPassword
 	}
 
-	t, err := s.jwtTokenBuilder.CreateToken(strconv.Itoa(int(user.Id)))
+	token, err = s.tokeBuilder.CreateToken(strconv.Itoa(int(user.Id)))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can't create jwt token, err: %s", err)
 	}
-
-	token = &Token{t}
 
 	return token, nil
 }

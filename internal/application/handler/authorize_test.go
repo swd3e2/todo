@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/swd3e2/todo/internal/application"
 	mock_application "github.com/swd3e2/todo/internal/application/generated_mocks"
+	"io/ioutil"
 	"net/http/httptest"
 	"testing"
 )
@@ -23,7 +24,7 @@ func TestAuthorize(t *testing.T) {
 		}, []string{"path"})
 
 	logger := logrus.New()
-	//logger.Out = ioutil.Discard
+	logger.Out = ioutil.Discard
 
 	testTable := []struct {
 		name                 string
